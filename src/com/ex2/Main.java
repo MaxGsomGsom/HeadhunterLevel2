@@ -10,7 +10,7 @@ public class Main {
     private static Scanner input = new Scanner(System.in);
     private static PrintStream output = System.out;
 
-    static void main(String[] args) {
+    public static void main(String[] args) {
         String inputStr = ""; //входная последовательность
         //ввод последовательности с проверкой ввода
         Pattern p = Pattern.compile("^\\d+$");
@@ -23,38 +23,15 @@ public class Main {
         NumSub numSub = FindInclude(inputStr);
 
         //подсчет кол-ва символов с начала последовательности S
-        int countDigits = CalcIncludePos(numSub.num) - numSub.sub;
+        BigInteger countDigits = CalcIncludePos(numSub.num);
+        //вычитаем несколько символов, если последовательность начинается не с полного числа
+        countDigits = countDigits.subtract(BigInteger.valueOf(numSub.sub));
+
 
         output.println("===============================");
         output.println("Первое вхождение в S находится на позиции:");
         output.println(countDigits);
         input.nextLine();
-    }
-
-    private static int CalcIncludePos(BigInteger num) {
-        int countDigits = 0; //всего символов с начала последовательности S
-        int cur = 1; //текущий разряд
-        int digits = 0; //кол-во цифр в разряде
-        int next; //следующий разряд
-
-        while (num.compareTo(BigInteger.ZERO) > 0) {
-            //добавляем разряд
-            digits++;
-            next = cur * 10;
-            //вычитаем кол-во чисел этого разряда из исходного числа
-            num = num.subtract(BigInteger.valueOf(next - cur));
-
-            //добавляем кол-во цифр всех чисел этого разряда к позиции от начала последовательности S
-            if (num.compareTo(BigInteger.ZERO) >= 0)
-                countDigits += (next - cur) * digits;
-            else
-                countDigits += (next - cur + num.intValue()) * digits;
-
-            cur = next;
-        }
-
-
-        return countDigits - digits + 1; //начальная позиция - первая цифра числа num
     }
 
     private static NumSub FindInclude(String inputStr) {
@@ -63,7 +40,7 @@ public class Main {
         numSub.num = BigInteger.TEN.pow(51);
         numSub.sub = 0;
 
-        //для каждойго символа из input
+        //для каждого символа из input
         for (int start = 0; start < inputStr.length(); start++) {
             //для каждой длины числа num, большей, чем позиция с начала последовательности input, но меньшей длины последовательности
             for (int len = start + 1; len <= (inputStr.length() - start); len++) {
@@ -78,7 +55,7 @@ public class Main {
 
                     String newNumStr = newNumAdd.toString();
                     //если начальная часть числа в буфере не совпадает с конечной частью числа num, то выход
-                    if (newNumStr.substring(newNumStr.length() - start, newNumStr.length()).equals(inputStr.substring(0, start)))
+                    if (!newNumStr.substring(newNumStr.length() - start, newNumStr.length()).equals(inputStr.substring(0, start)))
                         continue;
 
                     newNumAdd = newNumAdd.add(BigInteger.ONE);
@@ -91,7 +68,7 @@ public class Main {
                 for (; cur <= (inputStr.length() - len); cur += len) {
                     newNumAdd = newNumAdd.add(BigInteger.ONE);
                     //если числа не равны
-                    if (newNumAdd.toString().equals(inputStr.substring(cur, cur+len))) {
+                    if (!newNumAdd.toString().equals(inputStr.substring(cur, cur + len))) {
                         isGood = false;
                         break;
                     }
@@ -105,7 +82,7 @@ public class Main {
                 if (endLen < len && endLen > 0) {
                     newNumAdd = newNumAdd.add(BigInteger.ONE);
                     //если эти символы не совпадают с начальной частью числа в буфере, то выход
-                    if (inputStr.substring(cur).equals(newNumAdd.toString().substring(0, endLen)))
+                    if (!inputStr.substring(cur).equals(newNumAdd.toString().substring(0, endLen)))
                         continue;
                 }
 
@@ -121,6 +98,32 @@ public class Main {
         return numSub;
 
     }
+
+    private static BigInteger CalcIncludePos(BigInteger num) {
+        BigInteger countDigits = BigInteger.ZERO; //всего символов с начала последовательности S
+        BigInteger cur = BigInteger.ONE; //текущий разряд
+        BigInteger digits = BigInteger.ZERO; //кол-во цифр в разряде
+        BigInteger next; //следующий разряд
+
+        while (num.compareTo(BigInteger.ZERO) > 0) {
+            //добавляем разряд
+            digits = digits.add(BigInteger.ONE);
+            next = cur.multiply(BigInteger.TEN);
+            //вычитаем кол-во чисел этого разряда из исходного числа
+            num = num.add(cur).subtract(next);
+
+            //добавляем кол-во цифр всех чисел этого разряда к позиции от начала последовательности S
+            if (num.compareTo(BigInteger.ZERO) >= 0)
+                countDigits = countDigits.add(next.subtract(cur).multiply(digits));
+            else
+                countDigits = countDigits.add(next.subtract(cur).add(num).multiply(digits));
+
+            cur = next;
+        }
+
+        return countDigits.subtract(digits).add(BigInteger.ONE); //начальная позиция - первая цифра числа num
+    }
+
 
 
     private static class NumSub{
